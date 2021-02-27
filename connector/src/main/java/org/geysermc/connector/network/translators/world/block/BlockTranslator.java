@@ -38,8 +38,10 @@ import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.utils.FileUtils;
 import org.reflections.Reflections;
 
+import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.InputStream;
+import java.util.AbstractMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -149,6 +151,15 @@ public class BlockTranslator {
         Reflections ref = GeyserConnector.getInstance().useXmlReflections() ? FileUtils.getReflections("org.geysermc.connector.network.translators.world.block.entity")
                 : new Reflections("org.geysermc.connector.network.translators.world.block.entity");
 
+        // Load Block Overrides
+        JsonNode blocksOverride = null;
+        try (InputStream is = FileUtils.getResource("overrides/blocks.json")) {
+            blocksOverride = GeyserConnector.JSON_MAPPER.readTree(is);
+        } catch (IOException | AssertionError ignored) { }
+
+        Object2IntMap<NbtMap> addedStatesMap = new Object2IntOpenHashMap<>();
+        addedStatesMap.defaultReturnValue(-1);
+
         int javaWaterRuntimeId = -1;
         int bedrockWaterRuntimeId = -1;
         int javaRuntimeId = -1;
@@ -166,6 +177,12 @@ public class BlockTranslator {
             javaRuntimeId++;
             Map.Entry<String, JsonNode> entry = blocksIterator.next();
             String javaId = entry.getKey();
+
+            // Check for an override
+            if (blocksOverride != null && blocksOverride.has(javaId)) {
+                entry = new AbstractMap.SimpleEntry<>(javaId, blocksOverride.get(javaId));
+            }
+
             NbtMap blockTag = buildBedrockState(entry.getValue());
             int bedrockRuntimeId = blockStateOrderedMap.getOrDefault(blockTag, -1);
             if (bedrockRuntimeId == -1) {

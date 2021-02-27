@@ -526,7 +526,7 @@ public class GeyserSession implements CommandSender {
 
                     protocol = new MinecraftProtocol(authenticationService);
                 } else {
-                    protocol = new MinecraftProtocol(username);
+                    protocol = new MinecraftProtocol(username.replace(" ","_"));
                 }
 
                 connectDownstream();
@@ -962,7 +962,7 @@ public class GeyserSession implements CommandSender {
         settings.setServerAuthoritativeBlockBreaking(false);
         startGamePacket.setPlayerMovementSettings(settings);
 
-        upstream.sendPacket(startGamePacket);
+        sendUpstreamPacket(startGamePacket);
     }
 
     public void addTeleport(TeleportCache teleportCache) {
